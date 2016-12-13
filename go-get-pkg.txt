@@ -1,0 +1,7 @@
+github.com/nlopes/slack
+github.com/sbstjn/allot
+github.com/dchest/stemmer/porter2
+github.com/tchap/go-patricia/patricia
+github.com/armon/go-radix
+github.com/jasonlvhit/gocron
+github.com/abhishekkr/gol/golconfig
