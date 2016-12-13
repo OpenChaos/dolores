@@ -29,7 +29,7 @@ func MessageEvent(ev *slack.MessageEvent) {
 		parsedMessage := strings.TrimSpace(strings.Replace(originalMessage, "<@"+BotID+">", "", -1))
 		r, n := utf8.DecodeRuneInString(parsedMessage)
 		parsedMessage = string(unicode.ToLower(r)) + parsedMessage[n:]
-		messageHandler(parsedMessage)
+		processMessage(parsedMessage)
 	}
 }
 
