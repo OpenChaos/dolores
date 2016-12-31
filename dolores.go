@@ -1,8 +1,8 @@
 package main
 
 import (
-	dolores_helpers "./corecode"
-	dolores_slack "./loops/slack"
+	dolores_corecode "dolores/corecode"
+	dolores_slack "dolores/loops/slack"
 
 	"github.com/jasonlvhit/gocron"
 )
@@ -14,7 +14,7 @@ func prepareScheduler() {
 }
 
 func main() {
-	config := dolores_helpers.ConfigFromFlags()
+	config := dolores_corecode.ConfigFromFlags()
 
 	go prepareScheduler() // spawn cron scheduler jobs
 	dolores_slack.LoopRTMEvents(config)

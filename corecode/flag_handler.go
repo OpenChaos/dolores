@@ -1,4 +1,4 @@
-package dolores_helpers
+package dolores_corecode
 
 import (
 	"flag"
