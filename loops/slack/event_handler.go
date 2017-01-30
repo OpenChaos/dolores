@@ -2,6 +2,7 @@ package dolores_slack
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -19,38 +20,28 @@ func ConnectedEvent(ev *slack.ConnectedEvent) {
 }
 
 func MessageEvent(ev *slack.MessageEvent) {
-	callerID := ev.Msg.User
-
-	if ev.Msg.Type == "message" && callerID != BotID && ev.Msg.SubType != "message_deleted" &&
-		(strings.Contains(ev.Msg.Text, "<@"+BotID+">") || strings.HasPrefix(ev.Msg.Channel, "D")) {
+	if ev.Msg.Type == "message" && ev.Msg.User != BotID && ev.Msg.SubType != "message_deleted" {
+		//&& (strings.Contains(ev.Msg.Text, "<@"+BotID+">") || strings.HasPrefix(ev.Msg.Channel, "infra")) {
 		fmt.Printf("Message: %+v\n", ev.Msg)
-		originalMessage := ev.Msg.Text
 		// strip out bot's name and spaces
-		parsedMessage := strings.TrimSpace(strings.Replace(originalMessage, "<@"+BotID+">", "", -1))
+		parsedMessage := strings.TrimSpace(strings.Replace(ev.Msg.Text, "<@"+BotID+">", "", -1))
 		r, n := utf8.DecodeRuneInString(parsedMessage)
 		parsedMessage = string(unicode.ToLower(r)) + parsedMessage[n:]
-		processMessage(parsedMessage)
+		go processMessage(ev, parsedMessage)
 	}
 }
 
 func PresenceChangeEvent(ev *slack.PresenceChangeEvent) {
-	fmt.Printf("Presence Change: %+v\n", ev)
-
-	// bug in API sets "away" sometimes when user rejoins slack :(
-	/*if (ev.Presence == "away") {
-	  leavingUser, _ := API.GetUserInfo(ev.User)
-	  rtm.SendMessage(rtm.NewOutgoingMessage(leavingUser.Profile.FirstName+" just cheezed it!",
-	  generalChannel))
-	}*/
+	log.Printf("Presence Change: %+v\n", ev)
 }
 
 func LatencyReport(ev *slack.LatencyReport) {
 	API.GetUserInfo(BotID)
-	//fmt.Printf("Current latency: %+v\n", ev.Value)
+	log.Printf("Current latency: %+v\n", ev.Value)
 }
 
 func RTMError(ev *slack.RTMError) {
-	fmt.Printf("Error: %s\n", ev.Error())
+	log.Printf("Error: %s\n", ev.Error())
 }
 
 func InvalidAuthEvent(ev *slack.InvalidAuthEvent) {
