@@ -7,16 +7,15 @@ import (
 	"os/exec"
 )
 
-func Exec(commandTokens []string) (err error) {
-	token_count := len(commandTokens)
+func Exec(command string, commandArgs ...string) (err error) {
 	var cmd *exec.Cmd
-	if token_count == 0 {
+	if command == "" {
 		log.Println("[ERROR] Exec got no command to run")
 		err = errors.New("Exec got no command to run")
-	} else if token_count == 1 {
-		cmd = exec.Command(commandTokens[0])
+	} else if len(commandArgs) == 0 {
+		cmd = exec.Command(command)
 	} else {
-		cmd = exec.Command(commandTokens[0], commandTokens[1:]...)
+		cmd = exec.Command(command, commandArgs[:]...)
 	}
 
 	var out bytes.Buffer

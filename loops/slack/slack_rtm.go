@@ -1,6 +1,8 @@
 package dolores_slack
 
 import (
+	"strings"
+
 	"github.com/abhishekkr/gol/golconfig"
 	"github.com/nlopes/slack"
 )
@@ -8,6 +10,7 @@ import (
 func LoopRTMEvents(config golconfig.FlatConfig) {
 
 	BotID = config["slack-bot-name"]
+	SlackAdminEmailIds = strings.Split(config["slack-admin-emails"], " ")
 	API = AuthenticatedApi(config["slack-bot-api-token"])
 	if config["slack-debug-mode"] == "true" {
 		API.SetDebug(true)

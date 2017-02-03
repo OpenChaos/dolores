@@ -28,9 +28,15 @@ func sshAccess(ev *slack.MessageEvent, match allot.MatchInterface) (reply string
 	user, _ := match.Match(2)
 	machinePattern, _ := match.Match(3)
 
+	requestedBy := SenderEmail(ev)
+	isAdmin := "no"
+	if IsAdmin(requestedBy) {
+		isAdmin = "yes"
+	}
+
 	Reply(ev, "sure, let me check if it's allowed as of now :)")
 	if axn == "give" && (prep == "to" || prep == "for") {
-		err = dolores_drives.GiveSshAccess(machinePattern, user)
+		err = dolores_drives.GiveSshAccess(machinePattern, user, isAdmin)
 	}
 	reply = "your access should work now for available public key if any"
 	if err != nil {
