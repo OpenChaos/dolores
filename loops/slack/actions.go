@@ -34,9 +34,14 @@ func sshAccess(ev *slack.MessageEvent, match allot.MatchInterface) (reply string
 		isAdmin = "yes"
 	}
 
-	Reply(ev, "sure, let me check if it's allowed as of now :)")
+	Reply(ev, sshAccessReplyDeferMessage)
 	if axn == "give" && (prep == "to" || prep == "for") {
 		reply, err = dolores_drives.GiveSshAccess(machinePattern, user, isAdmin)
+		if err != nil && sshAccessReplyFailureMessage != "" {
+			reply = sshAccessReplyFailureMessage
+		} else if err == nil && sshAccessReplySuccessMessage != "" {
+			reply = sshAccessReplySuccessMessage
+		}
 	}
 	return
 }

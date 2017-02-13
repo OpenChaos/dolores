@@ -43,7 +43,7 @@ func processMessage(ev *slack.MessageEvent, msg string) {
 		return
 	}
 
-	err := Reply(ev, "What do you mean by that?\n\tTry 'help' for how-to.\n\tIf you think your command was correct, talk to systems team about the issue.")
+	err := Reply(ev, doloresWrongCmdMessage)
 	if err != nil {
 		log.Println("[ERROR]", err)
 	}

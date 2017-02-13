@@ -49,9 +49,7 @@ func InvalidAuthEvent(ev *slack.InvalidAuthEvent) {
 }
 
 func DefaultEvent(msg slack.RTMEvent) {
-	// the gocron scheduler above communicates with the RTMbot subroutine
-	// via it's builtin channel. here we check for custom events and act
-	// accordingly
+	// via builtin channel, here we check for custom events & act accordingly
 	if msg.Type == "ListStaging" || msg.Type == "ListProduction" ||
 		msg.Type == "ListUAT" ||
 		msg.Type == "ListInternal" {
@@ -59,8 +57,6 @@ func DefaultEvent(msg slack.RTMEvent) {
 		params := slack.PostMessageParameters{AsUser: true}
 		API.PostMessage("cd-phoenix", response, params)
 	} else {
-		fmt.Println("*****", msg)
-		// Ignore other events..
-		//fmt.Printf("Unexpected %s: %+v\n", msg.Type, msg.Data)
+		log.Println("[skipped-event]", msg)
 	}
 }

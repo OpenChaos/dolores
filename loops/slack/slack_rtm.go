@@ -8,6 +8,7 @@ import (
 )
 
 func LoopRTMEvents(config golconfig.FlatConfig) {
+	overrideMessagesFromEnv()
 
 	BotID = config["slack-bot-name"]
 	SlackAdminEmailIds = strings.Split(config["slack-admin-emails"], " ")
