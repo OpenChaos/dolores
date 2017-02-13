@@ -15,6 +15,6 @@ func GcloudComputeInstances() {
 	output, err := dolores_corecode.Exec("gcloud-compute-instances", parameters[0:]...)
 	log.Println(output)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Println("[ERROR]", err.Error())
 	}
 }
