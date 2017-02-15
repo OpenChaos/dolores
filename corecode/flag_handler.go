@@ -37,6 +37,11 @@ func ConfigFromFlags() golconfig.FlatConfig {
 
 	assignIfEmpty(config, "slack-bot-name", *flagSlackBotName)
 	assignIfEmpty(config, "slack-bot-api-token", *flagSlackBotAPIToken)
+	assignIfEmpty(config, "admin-emails", "")
+	assignIfEmpty(config, "db-admin-emails", "")
+
+	config["admin-emails"] = OverrideFromEnvVar("DOLORES_ADMINS", config["admin-emails"])
+	config["db-admin-emails"] = OverrideFromEnvVar("DATABASE_READONLY_ACCESS_ADMINS", config["db-admin-emails"])
 
 	fmt.Println("Dolores config:")
 	for cfg, val := range config {
