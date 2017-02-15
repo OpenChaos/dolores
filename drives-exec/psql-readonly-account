@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+##############################################################################
+# make sure dolores ~/.ssh/config got config as following for non-interactice ssh
+#
+#### Host s-*
+####  User userForPasswordlessKey
+####  PreferredAuthentications publickey
+####  IdentityFile /home/userForPasswordlessKey/.ssh/id_rsa
+####  IdentitiesOnly yes
+#
+##############################################################################
+
+#set -ex
+
+[[ $# -ne 5 ]] && echo "Wrong usage. Passed $# arguments ($@)." &&  exit 1
+
+DATABASE_MASTER_BOX_USER="${1}"
+DATABASE_MASTER_BOX="${2}"
+DATABASE_NAME="${3}"
+DATABASE_USERNAME="${4}"
+DATABASE_PASSWORD="${5}"
+
+MISSING_KEYS=""
+[[ -z "${DATABASE_MASTER_BOX_USER}" ]] && MISSING_KEYS="${MISSING_KEYS} DATABASE_MASTER_BOX_USER"
+[[ -z "${DATABASE_MASTER_BOX}" ]] && MISSING_KEYS="${MISSING_KEYS} DATABASE_MASTER_BOX"
+[[ -z "${DATABASE_NAME}" ]] && MISSING_KEYS="${MISSING_KEYS} DATABASE_NAME"
+[[ -z "${DATABASE_USERNAME}" ]] && MISSING_KEYS="${MISSING_KEYS} DATABASE_USERNAME"
+[[ -z "${DATABASE_PASSWORD}" ]] && MISSING_KEYS="${MISSING_KEYS} DATABASE_PASSWORD"
+[[ ! -z "${MISSING_KEYS}" ]] && echo "[ERROR] Missing - ${MISSING_KEYS}" && exit 1
+
+################################## local prep
+
+DATABASE_USERNAME=$(echo "$DATABASE_USERNAME" | sed 's/@.*//' | sed 's/[^a-zA-Z0-9]//g')
+DATABASE_USERNAME="ro_${DATABASE_USERNAME}"
+
+CHECK_READONLY_PSQL_FILE=".${DATABASE_NAME}-${DATABASE_USERNAME}-check"
+CREATE_READONLY_PSQL_FILE=".${DATABASE_NAME}-${DATABASE_USERNAME}-create"
+
+cat > $CREATE_READONLY_PSQL_FILE <<CREATE_READONLY_PSQL_FILE_EOF
+\list
+CREATE ROLE ${DATABASE_USERNAME} WITH LOGIN PASSWORD '${DATABASE_PASSWORD}';
+\c ${DATABASE_NAME}
+GRANT USAGE ON SCHEMA public to ${DATABASE_USERNAME};
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO ${DATABASE_USERNAME};
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${DATABASE_USERNAME};
+ALTER default privileges in schema public
+  grant select on tables to ${DATABASE_USERNAME};
+ALTER default privileges in schema public
+  grant select on sequences to ${DATABASE_USERNAME};
+CREATE_READONLY_PSQL_FILE_EOF
+
+cat > $CHECK_READONLY_PSQL_FILE <<CHECK_READONLY_PSQL_FILE_EOF
+psql -t -U postgres -c "\du ${DATABASE_USERNAME}" | grep -v '^\s*$' | wc -l
+CHECK_READONLY_PSQL_FILE_EOF
+
+################################## remote-runs
+
+remote_output=$(ssh ${DATABASE_MASTER_BOX_USER}@${DATABASE_MASTER_BOX} "hostname")
+[[ $? -ne 0 ]] && echo "[ERROR] ${DATABASE_MASTER_BOX}'s ssh config seem to be missing." && exit 102
+
+remote_output=$(scp ${CREATE_READONLY_PSQL_FILE} ${DATABASE_MASTER_BOX_USER}@${DATABASE_MASTER_BOX}:/tmp/${CREATE_READONLY_PSQL_FILE})
+[[ $? -ne 0 ]] && echo "[ERROR] Failed to scp account creation script for ${DATABASE_USERNAME} at ${DATABASE_MASTER_BOX}." && exit 103
+
+remote_output=$(scp ${CHECK_READONLY_PSQL_FILE} ${DATABASE_MASTER_BOX_USER}@${DATABASE_MASTER_BOX}:/tmp/${CHECK_READONLY_PSQL_FILE})
+[[ $? -ne 0 ]] && echo "[ERROR] Failed to scp account check script for ${DATABASE_USERNAME} at ${DATABASE_MASTER_BOX}." && exit 103
+
+checking_psql_account=$(ssh ${DATABASE_MASTER_BOX_USER}@${DATABASE_MASTER_BOX} "/usr/bin/env bash /tmp/${CHECK_READONLY_PSQL_FILE}")
+[[ $? -ne 0 ]] && echo "[ERROR] Failed running account creation script for ${DATABASE_USERNAME} at ${DATABASE_MASTER_BOX}." && exit 104
+[[ $checking_psql_account -eq 1 ]] && echo "[ERROR] ${DATABASE_USERNAME} is already present." && exit 106
+
+remote_output=$(ssh ${DATABASE_MASTER_BOX_USER}@${DATABASE_MASTER_BOX} "psql -U postgres -f /tmp/${CREATE_READONLY_PSQL_FILE}")
+[[ $? -ne 0 ]] && echo "[ERROR] Failed running account creation script for ${DATABASE_USERNAME} at ${DATABASE_MASTER_BOX}." && exit 104
+
+checking_psql_account=$(ssh ${DATABASE_MASTER_BOX_USER}@${DATABASE_MASTER_BOX} "/usr/bin/env bash /tmp/${CHECK_READONLY_PSQL_FILE}")
+[[ $? -ne 0 ]] && echo "[ERROR] Failed running account creation script for ${DATABASE_USERNAME} at ${DATABASE_MASTER_BOX}." && exit 104
+[[ $checking_psql_account -ne 1 ]] && echo "[ERROR] ${DATABASE_USERNAME} creation did not worked." && exit 106
+
+remote_output=$(ssh ${DATABASE_MASTER_BOX_USER}@${DATABASE_MASTER_BOX} "rm /tmp/${CREATE_READONLY_PSQL_FILE}")
+[[ $? -ne 0 ]] && echo "[ERROR] Failed cleaning account creation script for ${DATABASE_USERNAME} at ${DATABASE_MASTER_BOX}." && exit 105
+
+remote_output=$(ssh ${DATABASE_MASTER_BOX_USER}@${DATABASE_MASTER_BOX} "rm /tmp/${CHECK_READONLY_PSQL_FILE}")
+[[ $? -ne 0 ]] && echo "[ERROR] Failed cleaning account check script for ${DATABASE_USERNAME} at ${DATABASE_MASTER_BOX}." && exit 105
+
+################################## local cleanup
+
+rm "${CHECK_READONLY_PSQL_FILE}"
+rm "${CREATE_READONLY_PSQL_FILE}"
+
+#echo -n "${DATABASE_USERNAME}"
+################################## fin
