@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+##########################################################################
+# need gcloud utility working
+##########################################################################
+
+set -ex
+
+[[ $# -ne 1 ]] && echo "[ERROR] Shell Output Dir not provided." && exit 1
+
+unset _DOLORES_SHELL_OUTPUT_DIR _GCLOUD_COMPUTE_INSTANCES_LIST _GCLOUD_COMPUTE_INSTANCES_LIST_TMP
+
+_DOLORES_SHELL_OUTPUT_DIR="$1"
+_GCLOUD_COMPUTE_INSTANCES_LIST="${_DOLORES_SHELL_OUTPUT_DIR}/gcloud-compute-instances.lst"
+_GCLOUD_COMPUTE_INSTANCES_LIST_TMP="${_GCLOUD_COMPUTE_INSTANCES_LIST}.swp"
+
+mkdir -p "${_DOLORES_SHELL_OUTPUT_DIR}"
+echo -n '' > "${_GCLOUD_COMPUTE_INSTANCES_LIST_TMP}"
+
+for prj in $(gcloud projects list | grep -v PROJECT_ID | awk '{print $1}'); do
+  gcloud --project "${prj}" compute addresses list | grep -v NAME | xargs -I {} echo "${prj} "{} >> "${_GCLOUD_COMPUTE_INSTANCES_LIST_TMP}"
+done
+
+for prj in $(gcloud projects list | grep -v PROJECT_ID | awk '{print $1}'); do
+  gcloud --project "${prj}" compute instances list | grep -v NAME | xargs -I {} echo "${prj} "{} >> "${_GCLOUD_COMPUTE_INSTANCES_LIST_TMP}"
+done
+
+mv -f "${_GCLOUD_COMPUTE_INSTANCES_LIST_TMP}" "${_GCLOUD_COMPUTE_INSTANCES_LIST}"
+
+echo "gcloud compute instances and addresses list at ${_GCLOUD_COMPUTE_INSTANCES_LIST}"
