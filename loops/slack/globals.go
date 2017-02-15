@@ -3,7 +3,8 @@ package dolores_slack
 import "github.com/nlopes/slack"
 
 var (
-	BotID              string
-	SlackAdminEmailIds []string
-	API                *slack.Client
+	BotID                string
+	DoloresAdminEmailIds []string
+	DbAdminEmailIds      []string
+	API                  *slack.Client
 )

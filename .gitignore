@@ -16,3 +16,4 @@ temp/*
 *.yml
 *.log
 pkg/**
+.memories.shell

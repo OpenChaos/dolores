@@ -15,4 +15,11 @@ var (
 		"{verb} access to {user} for {machinePattern}",
 		"{verb} login access to {user} for {machinePattern}",
 	}
+
+	dbAccessAllotCommand = allot.New("(give) db access to <user:string> for <appName:string> in <appEnv:string>")
+	dbAccessNlpSamples   = []string{
+		"{verb} db access to {user} for {appName} in {appEnv}",
+		"{verb} access to {user} for db of {appName} in {appEnv}",
+		"{verb} database access to {user} for {appName} in {appEnv}",
+	}
 )

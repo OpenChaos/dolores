@@ -20,6 +20,7 @@ type MessageHandler struct {
 var (
 	message_types = []MessageHandler{
 		sshAccessMessageHandler,
+		dbAccessMessageHandler,
 		helpMessageHandler,
 	}
 )
@@ -33,11 +34,11 @@ func processMessageByAllot(ev *slack.MessageEvent, msg string) bool {
 
 		reply, axn_err := message_type.msgFoo(ev, match)
 		if axn_err != nil {
-			log.Println("[ERROR]", axn_err, match)
+			log.Println("[ERROR] running task failed,", axn_err, match)
 		}
 		axn_err = Reply(ev, reply)
 		if axn_err != nil {
-			log.Println("[ERROR]", axn_err, match)
+			log.Println("[ERROR] sending reply failed,", axn_err, match)
 		}
 		return true
 	}
@@ -52,7 +53,7 @@ func processMessage(ev *slack.MessageEvent, msg string) {
 
 	err := Reply(ev, doloresWrongCmdMessage)
 	if err != nil {
-		log.Println("[ERROR]", err)
+		log.Println("[ERROR] sending reply failed,", err)
 	}
 	log.Println("Request did not match command.")
 }

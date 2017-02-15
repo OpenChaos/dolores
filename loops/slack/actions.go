@@ -1,9 +1,15 @@
 package dolores_slack
 
 import (
+	"fmt"
+	"log"
+	"os"
+	"strings"
+
 	"github.com/nlopes/slack"
 	"github.com/sbstjn/allot"
 
+	dolores_corecode "dolores/corecode"
 	dolores_drives "dolores/drives"
 )
 
@@ -17,6 +23,11 @@ var (
 		allotCommand: sshAccessAllotCommand,
 		nlpSamples:   sshAccessNlpSamples,
 		msgFoo:       sshAccess}
+
+	dbAccessMessageHandler = MessageHandler{name: "db-access",
+		allotCommand: dbAccessAllotCommand,
+		nlpSamples:   dbAccessNlpSamples,
+		msgFoo:       dbAccess}
 )
 
 func helpMessage(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
@@ -36,13 +47,70 @@ func sshAccess(ev *slack.MessageEvent, match allot.MatchInterface) (reply string
 		isAdmin = "yes"
 	}
 
-	Reply(ev, sshAccessReplyDeferMessage)
+	Reply(ev, accessReplyDeferMessage)
 	if axn == "give" && (prep == "to" || prep == "for") {
 		reply, err = dolores_drives.GiveSshAccess(machinePattern, user, isAdmin)
 		if err != nil && sshAccessReplyFailureMessage != "" {
 			reply = sshAccessReplyFailureMessage
 		} else if err == nil && sshAccessReplySuccessMessage != "" {
 			reply = sshAccessReplySuccessMessage
+		}
+	}
+	return
+}
+
+func dbAccess(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
+	axn, _ := match.Match(0)
+	dbUsername, _ := match.Match(1)
+	appName, _ := match.Match(2)
+	appEnv, _ := match.Match(3)
+	appNameUpper := strings.ToUpper(appName)
+	appEnvUpper := strings.ToUpper(appEnv)
+
+	requestedBy := SenderEmail(ev)
+	if !IsAdmin(requestedBy) && !IsDbAdmin(requestedBy) {
+		reply = dbAccessReplyNotAdmin
+		return
+	}
+
+	Reply(ev, accessReplyDeferMessage)
+
+	whitelist_dbs := strings.Fields(os.Getenv("DATABASE_READONLY_WHITELIST_DBS"))
+	whitelist_dbs_count := len(whitelist_dbs)
+	for _token_idx, _token := range whitelist_dbs {
+		if _token == appNameUpper {
+			break
+		}
+		if _token_idx == whitelist_dbs_count {
+			log.Printf("[ERROR] %s asked db-access for non-whitelisted %s", requestedBy, appNameUpper)
+			reply = dbAccessReplyNotWhitelisted
+			return
+		}
+	}
+	dbSshUser := os.Getenv(fmt.Sprintf("DATABASE_READONLY_%s_%s_MASTER_SSH_USER", appNameUpper, appEnvUpper))
+	dbMaster := os.Getenv(fmt.Sprintf("DATABASE_READONLY_%s_%s_MASTER", appNameUpper, appEnvUpper))
+	dbSlave := os.Getenv(fmt.Sprintf("DATABASE_READONLY_%s_%s_SLAVE", appNameUpper, appEnvUpper))
+	dbName := os.Getenv(fmt.Sprintf("DATABASE_READONLY_%s_%s_DBNAME", appNameUpper, appEnvUpper))
+	dbPassword := dolores_corecode.GeneratePassword(25, true)
+
+	if dbSshUser == "" || dbMaster == "" || dbSlave == "" || dbName == "" || dbUsername == "" || dbPassword == "" {
+		reply = "sorry but `dbAccess` task might not be available for this environment, let `systems team` know"
+		return
+	}
+	log.Printf("[info] dbaccess with master:%s, dbslave: %s, dbname: %s, dbuser: %s, dbpassword: %s",
+		dbMaster, dbSlave, dbName, dbUsername, dbPassword)
+
+	if axn == "give" {
+		reply, err = dolores_drives.GiveDbAccess(dbSshUser, dbMaster, dbName, dbUsername, dbPassword)
+		if err != nil && dbAccessReplyFailureMessage != "" {
+			reply = dbAccessReplyFailureMessage
+		} else if err == nil && dbAccessReplySuccessMessage != "" {
+			reply = dbAccessReplySuccessMessage
+		} else if reply == "" {
+			reply = fmt.Sprintf(
+				"host: `%s`\ndb: `%s`\nuser: `ro_%s`\npassword: `%s`\ncontact systems team in case of issues",
+				dbSlave, dbName, dbUsername, dbPassword,
+			)
 		}
 	}
 	return

@@ -2,8 +2,18 @@ package dolores_slack
 
 import "github.com/nlopes/slack"
 
+func IsDbAdmin(emailID string) bool {
+	for _, dbAdminEmailID := range DbAdminEmailIds {
+		if emailID == dbAdminEmailID {
+			return true
+		}
+
+	}
+	return false
+}
+
 func IsAdmin(emailID string) bool {
-	for _, adminEmailID := range SlackAdminEmailIds {
+	for _, adminEmailID := range DoloresAdminEmailIds {
 		if emailID == adminEmailID {
 			return true
 		}

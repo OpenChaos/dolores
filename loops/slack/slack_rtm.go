@@ -11,7 +11,8 @@ func LoopRTMEvents(config golconfig.FlatConfig) {
 	overrideMessagesFromEnv()
 
 	BotID = config["slack-bot-name"]
-	SlackAdminEmailIds = strings.Split(config["slack-admin-emails"], " ")
+	DoloresAdminEmailIds = strings.Fields(config["admin-emails"])
+	DbAdminEmailIds = strings.Fields(config["db-admin-emails"])
 	API = AuthenticatedApi(config["slack-bot-api-token"])
 	if config["slack-debug-mode"] == "true" {
 		API.SetDebug(true)
