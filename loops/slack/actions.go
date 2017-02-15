@@ -9,12 +9,14 @@ import (
 
 var (
 	helpMessageHandler = MessageHandler{name: "help",
-		command: allot.New("(help|sos)"),
-		msgFoo:  helpMessage}
+		allotCommand: helpAllotCommand,
+		nlpSamples:   helpNlpSamples,
+		msgFoo:       helpMessage}
 
 	sshAccessMessageHandler = MessageHandler{name: "ssh-access",
-		command: allot.New("(give|remove) access (to|for|from|of) <user:string> for <machinePattern:string>"),
-		msgFoo:  sshAccess}
+		allotCommand: sshAccessAllotCommand,
+		nlpSamples:   sshAccessNlpSamples,
+		msgFoo:       sshAccess}
 )
 
 func helpMessage(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {

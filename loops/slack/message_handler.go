@@ -11,23 +11,22 @@ import (
 )
 
 type MessageHandler struct {
-	name    string
-	command allot.Command
-	msgFoo  func(ev *slack.MessageEvent, match allot.MatchInterface) (string, error)
+	name         string
+	allotCommand allot.Command
+	nlpSamples   []string
+	msgFoo       func(ev *slack.MessageEvent, match allot.MatchInterface) (string, error)
 }
 
 var (
 	message_types = []MessageHandler{
-		helpMessageHandler,
 		sshAccessMessageHandler,
+		helpMessageHandler,
 	}
 )
 
-func processMessage(ev *slack.MessageEvent, msg string) {
-	msg = strings.Join(strings.Fields(msg), " ")
-
+func processMessageByAllot(ev *slack.MessageEvent, msg string) bool {
 	for _, message_type := range message_types {
-		match, err := message_type.command.Match(msg)
+		match, err := message_type.allotCommand.Match(msg)
 		if err != nil {
 			continue
 		}
@@ -40,6 +39,14 @@ func processMessage(ev *slack.MessageEvent, msg string) {
 		if axn_err != nil {
 			log.Println("[ERROR]", axn_err, match)
 		}
+		return true
+	}
+	return false
+}
+
+func processMessage(ev *slack.MessageEvent, msg string) {
+	msg = strings.Join(strings.Fields(msg), " ")
+	if processMessageByAllot(ev, msg) {
 		return
 	}
 

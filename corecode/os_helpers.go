@@ -1,14 +1,18 @@
 package dolores_corecode
 
 import (
+	"log"
 	"os"
 	"strings"
 )
 
 func OverrideFromEnvVar(envVar string, defaultValue string) string {
 	if HasEnv(envVar) {
-		return os.Getenv(envVar)
+		envVarValue := os.Getenv(envVar)
+		log.Printf("[env] %s: %s", envVar, envVarValue)
+		return envVarValue
 	}
+	log.Printf("[env] %s: %s", envVar, defaultValue)
 	return defaultValue
 }
 
