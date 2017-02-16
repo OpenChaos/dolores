@@ -1,0 +1,7 @@
+{
+    "slack-debug-mode": "false",
+    "slack-bot-name": "dolores",
+    "slack-bot-api-token": "wxyz-000000000007-aaaaaaaaaaaaaaaaaaaaaaa7",
+    "admins": "sudo@maildomain.com admin@maildomain.com"
+    ]
+}
