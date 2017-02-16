@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -ex
+
+export DOLORES_BASEDIR=$(basename $0)
+
+cd $DOLORES_BASEDIR
+
+export PATH="${PATH}:${DOLORES_BASEDIR}/drives-exec"
+
+source "${DOLORES_BASEDIR}/dolores.env"
+
+"${DOLORES_BASEDIR}/dolores" -config "${DOLORES_BASEDIR}/dolores.json"
+
