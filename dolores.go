@@ -1,9 +1,9 @@
 package main
 
 import (
-	dolores_corecode "dolores/corecode"
-	dolores_slack "dolores/loops/slack"
-	dolores_memories "dolores/memories"
+	dolores_corecode "github.com/OpenChaos/dolores/corecode"
+	dolores_slack "github.com/OpenChaos/dolores/loops/slack"
+	dolores_memories "github.com/OpenChaos/dolores/memories"
 
 	"github.com/jasonlvhit/gocron"
 )

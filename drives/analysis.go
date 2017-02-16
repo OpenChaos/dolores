@@ -1,7 +1,7 @@
 package dolores_drives
 
 import (
-	dolores_corecode "dolores/corecode"
+	dolores_corecode "github.com/OpenChaos/dolores/corecode"
 )
 
 func HttpEcho(url string, instruction string, basicAuth string) (body string) {

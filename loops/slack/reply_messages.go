@@ -1,6 +1,6 @@
 package dolores_slack
 
-import dolores_corecode "dolores/corecode"
+import dolores_corecode "github.com/OpenChaos/dolores/corecode"
 
 var (
 	replyHelpMessage = `hey,

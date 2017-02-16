@@ -1,0 +1,37 @@
+{
+	"ImportPath": "github.com/OpenChaos/dolores",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "github.com/abhishekkr/gol/golconfig",
+			"Comment": "golkeyvalNS_simple-9-g58755ef",
+			"Rev": "58755ef951fdf647c5a8ce0a3de70e3dce04079d"
+		},
+		{
+			"ImportPath": "github.com/dchest/stemmer",
+			"Rev": "66719a20c4b5d119ff43ef41aab03265a3d644a7"
+		},
+		{
+			"ImportPath": "github.com/dchest/stemmer/porter2",
+			"Rev": "66719a20c4b5d119ff43ef41aab03265a3d644a7"
+		},
+		{
+			"ImportPath": "github.com/jasonlvhit/gocron",
+			"Rev": "42a5804d37aa0b9239b265e894a16b8edbf52d54"
+		},
+		{
+			"ImportPath": "github.com/nlopes/slack",
+			"Comment": "v0.0.1-152-ge595e9d",
+			"Rev": "e595e9d8590a04ff76407e4e7d1791d25b095c66"
+		},
+		{
+			"ImportPath": "github.com/sbstjn/allot",
+			"Rev": "1f2349af5ccd74c1a8d8fe4d1bf688645b628321"
+		},
+		{
+			"ImportPath": "golang.org/x/net/websocket",
+			"Rev": "b1a2d6e8c8b5fc8f601ead62536f02a8e1b6217d"
+		}
+	]
+}

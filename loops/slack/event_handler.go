@@ -16,12 +16,10 @@ func HelloEvent(ev *slack.HelloEvent) {
 
 func ConnectedEvent(ev *slack.ConnectedEvent) {
 	BotID = ev.Info.User.ID
-	//rtm.SendMessage(rtm.NewOutgoingMessage("I'm back baby!", generalChannel))
 }
 
 func MessageEvent(ev *slack.MessageEvent) {
 	if ev.Msg.Type == "message" && ev.Msg.User != BotID && ev.Msg.SubType != "message_deleted" {
-		//&& (strings.Contains(ev.Msg.Text, "<@"+BotID+">") || strings.HasPrefix(ev.Msg.Channel, "infra")) {
 		fmt.Printf("Message: %+v\n", ev.Msg)
 		// strip out bot's name and spaces
 		parsedMessage := strings.TrimSpace(strings.Replace(ev.Msg.Text, "<@"+BotID+">", "", -1))
@@ -50,13 +48,5 @@ func InvalidAuthEvent(ev *slack.InvalidAuthEvent) {
 
 func DefaultEvent(msg slack.RTMEvent) {
 	// via builtin channel, here we check for custom events & act accordingly
-	if msg.Type == "ListStaging" || msg.Type == "ListProduction" ||
-		msg.Type == "ListUAT" ||
-		msg.Type == "ListInternal" {
-		response := msg.Data.(string)
-		params := slack.PostMessageParameters{AsUser: true}
-		API.PostMessage("cd-phoenix", response, params)
-	} else {
-		log.Println("[skipped-event]", msg)
-	}
+	log.Println("[skipped-event]", msg)
 }

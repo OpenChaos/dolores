@@ -9,8 +9,8 @@ import (
 	"github.com/nlopes/slack"
 	"github.com/sbstjn/allot"
 
-	dolores_corecode "dolores/corecode"
-	dolores_drives "dolores/drives"
+	dolores_corecode "github.com/OpenChaos/dolores/corecode"
+	dolores_drives "github.com/OpenChaos/dolores/drives"
 )
 
 var (

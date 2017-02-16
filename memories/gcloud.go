@@ -1,9 +1,10 @@
 package dolores_memories
 
 import (
-	dolores_corecode "dolores/corecode"
 	"log"
 	"os"
+
+	dolores_corecode "github.com/OpenChaos/dolores/corecode"
 )
 
 func GcloudComputeInstances() {
