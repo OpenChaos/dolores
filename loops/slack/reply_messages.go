@@ -30,8 +30,20 @@ to get server list for app in envs:
 
 	dbAccessReplySuccessMessage, dbAccessReplyFailureMessage string
 
+	serverListAppNotFound = "config for given app is missing"
+
 	doloresWrongCmdMessage = "say what, that got no meaning for me\n try asking for `help`"
 )
+
+func harvestServerList() (appList string) {
+	r, _ := regexp.Compile("SERVER_LIST_[A-Za-z0-9]+_([0-9A-Za-z_]+)")
+	for _, envKeyVal := range os.Environ() {
+		envKey := strings.Split(envKeyVal, "=")[0]
+		appListppName := strings.ToLower(r.FindStringSubmatch(a)[1])
+		appList = fmt.Sprintf("%s %s", appListppName)
+	}
+	return
+}
 
 func overrideMessagesFromEnv() {
 	replyHelpMessage = dolores_corecode.OverrideFromEnvVar(
@@ -60,6 +72,8 @@ func overrideMessagesFromEnv() {
 
 	dbAccessReplyFailureMessage = dolores_corecode.OverrideFromEnvVar(
 		"DB_ACCESS_REPLY_FAILURE", dbAccessReplyFailureMessage)
+
+	serverListAppNotFound = fmt.Sprintf("app-name provided doesn't seem to be there, see if any of following belong to your app\n```%s```", harvestServerList())
 
 	doloresWrongCmdMessage = dolores_corecode.OverrideFromEnvVar(
 		"DOLORES_WRONG_CMD_REPLY", doloresWrongCmdMessage)
