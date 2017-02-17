@@ -131,14 +131,16 @@ func serverList(ev *slack.MessageEvent, match allot.MatchInterface) (reply strin
 	appKeywordEnvVar := fmt.Sprintf("SERVER_LIST_%s_%s", appEnvUpper, appNameUpper)
 	serverKeyword := os.Getenv(appKeywordEnvVar)
 	serverListPath := os.Getenv("GCLOUD_COMPUTE_LIST")
-	if serverKeyword != "" {
-		reply = fmt.Sprintf("[error] Keyword Env for %s app in %s was not found.", appNameUpper, appEnvUpper)
+	log.Printf("[info] server list for env: %s\nkeyword: %s\nlist-path: %s", appKeywordEnvVar, serverKeyword, serverListPath)
+	if serverKeyword == "" {
+		reply = fmt.Sprintf("[error] %s env var for %s app in %s was not found.",
+			appKeywordEnvVar, appNameUpper, appEnvUpper)
 		return
 	}
-	reply, err = dolores_drive.ServerListFor(serverKeyword, serverListPath)
+	reply, err = dolores_drives.ServerListFor(serverKeyword, serverListPath)
 	if err != nil {
 		reply = fmt.Sprintf("[ERROR] server list failed for %s app in %s", appName, appEnv)
 	}
+	reply = fmt.Sprintf("```\n%s\n```", reply)
 	return
 }
-

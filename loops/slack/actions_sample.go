@@ -24,5 +24,5 @@ var (
 	}
 
 	serverListAllotCommand = allot.New("server list for <appName:string> in <appEnv:string>")
-	dbAccessNlpSamples   = []string{}
+	serverListNlpSamples   = []string{}
 )

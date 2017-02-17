@@ -21,6 +21,7 @@ var (
 	message_types = []MessageHandler{
 		sshAccessMessageHandler,
 		dbAccessMessageHandler,
+		serverListMessageHandler,
 		helpMessageHandler,
 	}
 )
