@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -ex
+
+[[ $# -ne 2 ]] && echo "[error] Wrong Usage. '$ $0 <serverKeyword> <serverListPath>'" && exit 1
+
+SERVER_KEYWORD="$1"
+SERVER_LIST_PATH="$2"
+
+[[ ! -f "${SERVER_LIST_PATH}" ]] && echo "[ERROR] Server list path (${SERVER_LIST_PATH}) is missing." && exit 1
+
+######################################################## main
+
+cat "${SERVER_LIST_PATH}" | grep " ${SERVER_KEYWORD}"
+
+########################################################

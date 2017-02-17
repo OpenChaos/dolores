@@ -28,6 +28,11 @@ var (
 		allotCommand: dbAccessAllotCommand,
 		nlpSamples:   dbAccessNlpSamples,
 		msgFoo:       dbAccess}
+
+	serverListMessageHandler = MessageHandler{name: "server-list",
+		allotCommand: serverListAllotCommand,
+		nlpSamples:   serverListNlpSamples,
+		msgFoo:       serverList}
 )
 
 func helpMessage(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
@@ -113,5 +118,29 @@ func dbAccess(ev *slack.MessageEvent, match allot.MatchInterface) (reply string,
 			)
 		}
 	}
+	return
+}
+
+func serverList(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
+	appName, _ := match.Match(0)
+	appEnv, _ := match.Match(1)
+	appNameUpper := strings.ToUpper(appName)
+	appEnvUpper := strings.ToUpper(appEnv)
+
+	Reply(ev, accessReplyDeferMessage)
+	appKeywordEnvVar := fmt.Sprintf("SERVER_LIST_%s_%s", appEnvUpper, appNameUpper)
+	serverKeyword := os.Getenv(appKeywordEnvVar)
+	serverListPath := os.Getenv("GCLOUD_COMPUTE_LIST")
+	log.Printf("[info] server list for env: %s\nkeyword: %s\nlist-path: %s", appKeywordEnvVar, serverKeyword, serverListPath)
+	if serverKeyword == "" {
+		reply = fmt.Sprintf("[error] %s env var for %s app in %s was not found.",
+			appKeywordEnvVar, appNameUpper, appEnvUpper)
+		return
+	}
+	reply, err = dolores_drives.ServerListFor(serverKeyword, serverListPath)
+	if err != nil {
+		reply = fmt.Sprintf("[ERROR] server list failed for %s app in %s", appName, appEnv)
+	}
+	reply = fmt.Sprintf("```\n%s\n```", reply)
 	return
 }

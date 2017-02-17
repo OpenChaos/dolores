@@ -22,4 +22,7 @@ var (
 		"{verb} access to {user} for db of {appName} in {appEnv}",
 		"{verb} database access to {user} for {appName} in {appEnv}",
 	}
+
+	serverListAllotCommand = allot.New("server list for <appName:string> in <appEnv:string>")
+	serverListNlpSamples   = []string{}
 )

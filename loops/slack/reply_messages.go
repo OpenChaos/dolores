@@ -14,7 +14,10 @@ to get ssh access to machines:
 	it will try to fetch key for this from internal/scm portals, so make sure your keys are updated"
 
 to get db read-only access to machines:
-	give db access to <userID> for <appName> in <appEnv>
+	'give db access to <userID> for <appName> in <appEnv>'
+
+to get server list for app in envs:
+	'server list for <appName> in <appEnv>'
 `
 
 	accessReplyDeferMessage = "sure, let me check if I can help you with this :)"
