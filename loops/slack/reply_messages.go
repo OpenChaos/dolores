@@ -1,6 +1,14 @@
 package dolores_slack
 
-import dolores_corecode "github.com/OpenChaos/dolores/corecode"
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"regexp"
+	"strings"
+
+	dolores_corecode "github.com/OpenChaos/dolores/corecode"
+)
 
 var (
 	replyHelpMessage = `hey,
@@ -36,12 +44,23 @@ to get server list for app in envs:
 )
 
 func harvestServerList() (appList string) {
+	var buffer bytes.Buffer
+	set := make(map[string]struct{})
 	r, _ := regexp.Compile("SERVER_LIST_[A-Za-z0-9]+_([0-9A-Za-z_]+)")
 	for _, envKeyVal := range os.Environ() {
 		envKey := strings.Split(envKeyVal, "=")[0]
-		appListppName := strings.ToLower(r.FindStringSubmatch(a)[1])
-		appList = fmt.Sprintf("%s %s", appListppName)
+		appListSlice := r.FindStringSubmatch(envKey)
+		if len(appListSlice) > 0 {
+			appListppName := strings.ToLower(appListSlice[1])
+			set[appListppName] = struct{}{}
+		}
 	}
+	for key := range set {
+		buffer.WriteString(key)
+		buffer.WriteString("\n")
+	}
+
+	appList = buffer.String()
 	return
 }
 
