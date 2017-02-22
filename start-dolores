@@ -2,7 +2,7 @@
 
 set -ex
 
-export DOLORES_BASEDIR=$(basename $0)
+export DOLORES_BASEDIR=$(dirname $0)
 
 cd $DOLORES_BASEDIR
 

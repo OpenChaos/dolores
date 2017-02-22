@@ -26,6 +26,9 @@ to get db read-only access to machines:
 
 to get server list for app in envs:
 	'server list for <appName> in <appEnv>'
+
+to get box details from boxname|ipaddress, or list for partial match:
+	'nslookup <boxName|IPAddress>'
 `
 
 	accessReplyDeferMessage = "sure, let me check if I can help you with this :)"

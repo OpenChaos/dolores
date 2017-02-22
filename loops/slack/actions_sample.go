@@ -25,4 +25,7 @@ var (
 
 	serverListAllotCommand = allot.New("server list for <appName:string> in <appEnv:string>")
 	serverListNlpSamples   = []string{}
+
+	nslookupAllotCommand = allot.New("nslookup <searchFor:string>")
+	nslookupNlpSamples   = []string{}
 )

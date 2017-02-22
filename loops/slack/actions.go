@@ -33,6 +33,11 @@ var (
 		allotCommand: serverListAllotCommand,
 		nlpSamples:   serverListNlpSamples,
 		msgFoo:       serverList}
+
+	nslookupMessageHandler = MessageHandler{name: "nslookup",
+		allotCommand: nslookupAllotCommand,
+		nlpSamples:   nslookupNlpSamples,
+		msgFoo:       nslookup}
 )
 
 func helpMessage(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
@@ -139,6 +144,19 @@ func serverList(ev *slack.MessageEvent, match allot.MatchInterface) (reply strin
 	reply, err = dolores_drives.ServerListFor(serverKeyword, serverListPath)
 	if err != nil {
 		reply = fmt.Sprintf("[ERROR] server list failed for %s app in %s", appName, appEnv)
+	}
+	reply = fmt.Sprintf("```\n%s\n```", reply)
+	return
+}
+
+func nslookup(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
+	searchFor, _ := match.Match(0)
+
+	Reply(ev, accessReplyDeferMessage)
+	serverListPath := os.Getenv("GCLOUD_COMPUTE_LIST")
+	reply, err = dolores_drives.Nslookup(searchFor, serverListPath)
+	if err != nil {
+		reply = fmt.Sprintf("[ERROR] nslookup failed for %s", searchFor)
 	}
 	reply = fmt.Sprintf("```\n%s\n```", reply)
 	return
