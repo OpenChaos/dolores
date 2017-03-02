@@ -16,13 +16,34 @@ func HelloEvent(ev *slack.HelloEvent) {
 
 func ConnectedEvent(ev *slack.ConnectedEvent) {
 	BotID = ev.Info.User.ID
+	BotName = ev.Info.User.Name
+}
+
+func isMessageForMe(ev *slack.MessageEvent) (isForMe bool, msgText string) {
+	channel, _ := API.GetChannelInfo(ev.Msg.Channel)
+	botTextPrefixes := []string{
+		"<@" + BotID + ">",
+		"<@" + BotID + "|" + BotName + ">:",
+	}
+
+	if channel == nil {
+		isForMe = true
+	}
+
+	for _, prefix := range botTextPrefixes {
+		if strings.Contains(ev.Msg.Text, prefix) {
+			isForMe = true
+			// strip out bot's name and spaces
+			msgText = strings.TrimSpace(strings.Replace(ev.Msg.Text, prefix, "", -1))
+		}
+	}
+	return
 }
 
 func MessageEvent(ev *slack.MessageEvent) {
-	if ev.Msg.Type == "message" && ev.Msg.User != BotID && ev.Msg.SubType != "message_deleted" {
+	isForMe, parsedMessage := isMessageForMe(ev)
+	if isForMe && ev.Msg.Type == "message" && ev.Msg.User != BotID && ev.Msg.SubType != "message_deleted" {
 		fmt.Printf("Message: %+v\n", ev.Msg)
-		// strip out bot's name and spaces
-		parsedMessage := strings.TrimSpace(strings.Replace(ev.Msg.Text, "<@"+BotID+">", "", -1))
 		r, n := utf8.DecodeRuneInString(parsedMessage)
 		parsedMessage = string(unicode.ToLower(r)) + parsedMessage[n:]
 		go processMessage(ev, parsedMessage)
