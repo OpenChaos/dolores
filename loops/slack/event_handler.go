@@ -30,6 +30,7 @@ func isMessageForMe(ev *slack.MessageEvent) (isForMe bool, msgText string) {
 		isForMe = true
 	}
 
+	msgText = ev.Msg.Text
 	for _, prefix := range botTextPrefixes {
 		if strings.Contains(ev.Msg.Text, prefix) {
 			isForMe = true
