@@ -17,20 +17,20 @@ func HelloEvent(ev *slack.HelloEvent) {
 func ConnectedEvent(ev *slack.ConnectedEvent) {
 	BotID = ev.Info.User.ID
 	BotName = ev.Info.User.Name
-}
 
-func isMessageForMe(ev *slack.MessageEvent) (isForMe bool, msgText string) {
-	botTextPrefixes := []string{
+	BotTextPrefixesForChannel = []string{
 		"<@" + BotID + ">",
 		"<@" + BotID + "|" + BotName + ">:",
 	}
+}
 
+func isMessageForMe(ev *slack.MessageEvent) (isForMe bool, msgText string) {
 	if IsPersonalMessage(ev) {
 		isForMe = true
 	}
 
 	msgText = ev.Msg.Text
-	for _, prefix := range botTextPrefixes {
+	for _, prefix := range BotTextPrefixesForChannel {
 		if strings.Contains(ev.Msg.Text, prefix) {
 			isForMe = true
 			// strip out bot's name and spaces

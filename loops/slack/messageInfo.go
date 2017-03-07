@@ -30,8 +30,9 @@ func SenderEmail(event *slack.MessageEvent) string {
 }
 
 func IsPersonalMessage(event *slack.MessageEvent) bool {
-	channel, _ := API.GetChannelInfo(event.Msg.Channel)
-	if channel == nil {
+	_, cErr := API.GetChannelInfo(event.Msg.Channel)
+	_, gErr := API.GetGroupInfo(event.Msg.Channel)
+	if gErr != nil && cErr != nil {
 		return true
 	}
 	return false
