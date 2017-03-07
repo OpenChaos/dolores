@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+[[ $# -ne 3 ]] && echo "[error] Wrong Usage. '$ $0 <serverName|serverIP> <LineCount> <ServerListPath>'" && exit 1
+
+SERVER_KEYWORD="$1"
+LINE_COUNT="$2"
+SERVER_LIST_PATH="$3"
+
+[[ ! -f "${SERVER_LIST_PATH}" ]] && echo "[ERROR] Server list path (${SERVER_LIST_PATH}) is missing." && exit 1
+
+######################################################## main
+
+unset _SERVER_ENTRY _GCLOUD_PROJECT _INSTANCE_NAME
+
+if [[ $(echo "${SERVER_KEYWORD:0:1}" | grep -c '[0-9]') -ne 0 ]]; then
+  ## keyword is IP Address
+  _SERVER_ENTRY=$(cat "${SERVER_LIST_PATH}" | awk '{if ($5=="'$SERVER_KEYWORD'" || $6=="'$SERVER_KEYWORD'") print $0}')
+
+else
+  ## domain name
+  _SERVER_ENTRY=$(cat "${SERVER_LIST_PATH}" | awk '{if ($2=="'$SERVER_KEYWORD'") print $0}')
+
+fi
+
+[[ -z "${_SERVER_ENTRY}" ]] && echo "[ERROR] either your provided name/ip isn't complete or it doen't exist in our records" && exit 1
+
+_GCLOUD_PROJECT=$(echo "${_SERVER_ENTRY}" | awk '{print $1}')
+_INSTANCE_NAME=$(echo "${_SERVER_ENTRY}" | awk '{print $2}')
+
+########################################################
+
+gcloud --project "${_GCLOUD_PROJECT}" beta compute instances get-serial-port-output "${_INSTANCE_NAME}" | tail -${LINE_COUNT}

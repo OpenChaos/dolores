@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/nlopes/slack"
@@ -11,6 +12,7 @@ import (
 
 	dolores_corecode "github.com/OpenChaos/dolores/corecode"
 	dolores_drives "github.com/OpenChaos/dolores/drives"
+	dolores_gcp "github.com/OpenChaos/dolores/drives/gcp"
 )
 
 var (
@@ -38,6 +40,11 @@ var (
 		allotCommand: nslookupAllotCommand,
 		nlpSamples:   nslookupNlpSamples,
 		msgFoo:       nslookup}
+
+	bootLogMessageHandler = MessageHandler{name: "bootlog",
+		allotCommand: bootLogAllotCommand,
+		nlpSamples:   bootLogNlpSamples,
+		msgFoo:       bootLog}
 )
 
 func helpMessage(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
@@ -157,6 +164,25 @@ func nslookup(ev *slack.MessageEvent, match allot.MatchInterface) (reply string,
 	reply, err = dolores_drives.Nslookup(searchFor, serverListPath)
 	if err != nil {
 		reply = fmt.Sprintf("[ERROR] nslookup failed for %s", searchFor)
+	}
+	reply = fmt.Sprintf("```\n%s\n```", reply)
+	return
+}
+
+func bootLog(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
+	serialOutFor, _ := match.Match(0)
+	serialOutLineCount, serialOutLineCountErr := match.Match(1)
+
+	_, notInt := strconv.Atoi(serialOutLineCount)
+	if serialOutLineCountErr != nil || notInt != nil {
+		serialOutLineCount = "100" // default line count for logs
+	}
+
+	Reply(ev, accessReplyDeferMessage)
+	serverListPath := os.Getenv("GCLOUD_COMPUTE_LIST")
+	reply, err = dolores_gcp.GcloudSerialOut(serialOutFor, serialOutLineCount, serverListPath)
+	if err != nil {
+		reply = fmt.Sprintf("[ERROR] bootlog failed for %s", serialOutFor)
 	}
 	reply = fmt.Sprintf("```\n%s\n```", reply)
 	return

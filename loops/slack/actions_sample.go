@@ -28,4 +28,7 @@ var (
 
 	nslookupAllotCommand = allot.New("nslookup <searchFor:string>")
 	nslookupNlpSamples   = []string{}
+
+	bootLogAllotCommand = allot.New("bootlog <boxName:string> <lineCount:string>")
+	bootLogNlpSamples   = []string{}
 )

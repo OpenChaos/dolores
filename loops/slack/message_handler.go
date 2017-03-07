@@ -22,6 +22,7 @@ var (
 		sshAccessMessageHandler,
 		dbAccessMessageHandler,
 		serverListMessageHandler,
+		bootLogMessageHandler,
 		nslookupMessageHandler,
 		helpMessageHandler,
 	}

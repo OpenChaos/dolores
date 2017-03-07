@@ -29,6 +29,9 @@ to get server list for app in envs:
 
 to get box details from boxname|ipaddress, or list for partial match:
 	'nslookup <boxName|IPAddress>'
+
+to get gcloud serial output logs from boxname|ipaddress:
+	'bootlog <boxName|IPAddress> <count-Of-Lines>'
 `
 
 	accessReplyDeferMessage = "sure, let me check if I can help you with this :)"
