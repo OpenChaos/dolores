@@ -13,11 +13,11 @@ unset _SERVER_ENTRY
 
 if [[ $(echo "${SERVER_KEYWORD:0:1}" | grep -c '[0-9]') -ne 0 ]]; then
   ## keyword is IP Address
-  _SERVER_ENTRY=$(cat "${SERVER_LIST_PATH}" | awk '{if ($5=="'$SERVER_KEYWORD'" || $6=="'$SERVER_KEYWORD'") print $0}')
+  _SERVER_ENTRY=$(cat "${SERVER_LIST_PATH}" | awk '{if ($5=="'$SERVER_KEYWORD'" || $6=="'$SERVER_KEYWORD'") print $0}' | awk '{print "* ",$2,$5,$6,$7}')
 
 else
   ## domain name
-  _SERVER_ENTRY=$(cat "${SERVER_LIST_PATH}" | awk '{if ($2=="'$SERVER_KEYWORD'") print $0}')
+  _SERVER_ENTRY=$(cat "${SERVER_LIST_PATH}" | awk '{if ($2=="'$SERVER_KEYWORD'") print $0}' | awk '{print "* ",$2,$5,$6,$7}')
 
 fi
 
