@@ -20,13 +20,12 @@ func ConnectedEvent(ev *slack.ConnectedEvent) {
 }
 
 func isMessageForMe(ev *slack.MessageEvent) (isForMe bool, msgText string) {
-	channel, _ := API.GetChannelInfo(ev.Msg.Channel)
 	botTextPrefixes := []string{
 		"<@" + BotID + ">",
 		"<@" + BotID + "|" + BotName + ">:",
 	}
 
-	if channel == nil {
+	if IsPersonalMessage(ev) {
 		isForMe = true
 	}
 

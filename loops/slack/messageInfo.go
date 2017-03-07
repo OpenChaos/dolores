@@ -28,3 +28,11 @@ func SenderEmail(event *slack.MessageEvent) string {
 	}
 	return ""
 }
+
+func IsPersonalMessage(event *slack.MessageEvent) bool {
+	channel, _ := API.GetChannelInfo(event.Msg.Channel)
+	if channel == nil {
+		return true
+	}
+	return false
+}

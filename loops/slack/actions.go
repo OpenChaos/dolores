@@ -90,6 +90,10 @@ func dbAccess(ev *slack.MessageEvent, match allot.MatchInterface) (reply string,
 		return
 	}
 
+	if !IsPersonalMessage(ev) {
+		reply = notAllowedInChannel
+		return
+	}
 	Reply(ev, accessReplyDeferMessage)
 
 	whitelist_dbs := strings.Fields(os.Getenv("DATABASE_READONLY_WHITELIST_DBS"))
@@ -180,7 +184,9 @@ func bootLog(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, 
 
 	Reply(ev, accessReplyDeferMessage)
 	serverListPath := os.Getenv("GCLOUD_COMPUTE_LIST")
-	reply, err = dolores_gcp.GcloudSerialOut(serialOutFor, serialOutLineCount, serverListPath)
+	reply, err = dolores_gcp.GcloudSerialOut(serialOutFor,
+		serialOutLineCount,
+		serverListPath)
 	if err != nil {
 		reply = fmt.Sprintf("[ERROR] bootlog failed for %s", serialOutFor)
 	}

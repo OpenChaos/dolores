@@ -46,6 +46,8 @@ to get gcloud serial output logs from boxname|ipaddress:
 
 	serverListAppNotFound = "config for given app is missing"
 
+	notAllowedInChannel = "are you serious :angry:\n  this is license-to-kill, direct message me for this"
+
 	doloresWrongCmdMessage = "say what, that got no meaning for me\n try asking for `help`"
 )
 
@@ -99,6 +101,9 @@ func overrideMessagesFromEnv() {
 		"DB_ACCESS_REPLY_FAILURE", dbAccessReplyFailureMessage)
 
 	serverListAppNotFound = fmt.Sprintf("app-name provided doesn't seem to be there, see if any of following belong to your app\n```%s```", harvestServerList())
+
+	notAllowedInChannel = dolores_corecode.OverrideFromEnvVar(
+		"NOT_ALLOWED_IN_CHANNEL", notAllowedInChannel)
 
 	doloresWrongCmdMessage = dolores_corecode.OverrideFromEnvVar(
 		"DOLORES_WRONG_CMD_REPLY", doloresWrongCmdMessage)
