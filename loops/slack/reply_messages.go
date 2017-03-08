@@ -32,6 +32,8 @@ to get box details from boxname|ipaddress, or list for partial match:
 
 to get gcloud serial output logs from boxname|ipaddress:
 	'bootlog <boxName|IPAddress> <count-Of-Lines>'
+
+oh and if your machines or account were created within an hour, have patience...
 `
 
 	accessReplyDeferMessage = "sure, let me check if I can help you with this :)"
