@@ -39,7 +39,7 @@ func setHttpHeaders(req *http.Request, httpHeaders map[string]string) (err error
 	return
 }
 
-func HttpGet(baseURL string, getParams map[string]string, httpHeaders map[string]string) (body string, err error) {
+func Http(httpMethod string, baseURL string, getParams map[string]string, httpHeaders map[string]string) (body string, err error) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			Dial: (&net.Dialer{
@@ -52,7 +52,7 @@ func HttpGet(baseURL string, getParams map[string]string, httpHeaders map[string
 		},
 	}
 
-	req, err := http.NewRequest("GET", "", nil)
+	req, err := http.NewRequest(httpMethod, "", nil)
 	if err != nil {
 		return
 	}
@@ -72,5 +72,15 @@ func HttpGet(baseURL string, getParams map[string]string, httpHeaders map[string
 		log.Println(err)
 	}
 
+	return
+}
+
+func HttpGet(baseURL string, getParams map[string]string, httpHeaders map[string]string) (body string, err error) {
+	body, err = Http("GET", baseURL, getParams, httpHeaders)
+	return
+}
+
+func HttpPut(baseURL string, getParams map[string]string, httpHeaders map[string]string) (body string, err error) {
+	body, err = Http("PUT", baseURL, getParams, httpHeaders)
 	return
 }
