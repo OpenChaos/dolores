@@ -90,7 +90,6 @@ func MarkUsersInternal() {
 	for _, user := range external_users {
 		userDetails := UserDetails(user.Id)
 		if strings.HasSuffix(userDetails.Email, gitlabWhitelistDomain) {
-			fmt.Println(user.Id, user.Username)
 			usersAPIUrl := fmt.Sprintf("%s/api/v3/users/%d", gitlabBaseURL, user.Id)
 			getParams := map[string]string{
 				"private_token": gitlabPrivateToken,
