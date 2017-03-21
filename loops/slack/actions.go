@@ -143,7 +143,7 @@ func serverList(ev *slack.MessageEvent, match allot.MatchInterface) (reply strin
 	appNameUpper := strings.ToUpper(appName)
 	appEnvUpper := strings.ToUpper(appEnv)
 
-	Reply(ev, accessReplyDeferMessage)
+	AddReaction(ev, "+1")
 	appKeywordEnvVar := fmt.Sprintf("SERVER_LIST_%s_%s", appEnvUpper, appNameUpper)
 	serverKeyword := os.Getenv(appKeywordEnvVar)
 	serverListPath := os.Getenv("GCLOUD_COMPUTE_LIST")
@@ -163,7 +163,7 @@ func serverList(ev *slack.MessageEvent, match allot.MatchInterface) (reply strin
 func nslookup(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
 	searchFor, _ := match.Match(0)
 
-	Reply(ev, accessReplyDeferMessage)
+	AddReaction(ev, "+1")
 	serverListPath := os.Getenv("GCLOUD_COMPUTE_LIST")
 	reply, err = dolores_drives.Nslookup(searchFor, serverListPath)
 	if err != nil {
@@ -182,7 +182,7 @@ func bootLog(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, 
 		serialOutLineCount = "100" // default line count for logs
 	}
 
-	Reply(ev, accessReplyDeferMessage)
+	AddReaction(ev, "+1")
 	serverListPath := os.Getenv("GCLOUD_COMPUTE_LIST")
 	reply, err = dolores_gcp.GcloudSerialOut(serialOutFor,
 		serialOutLineCount,
