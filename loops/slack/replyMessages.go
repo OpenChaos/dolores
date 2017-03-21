@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 
 	dolores_corecode "github.com/OpenChaos/dolores/corecode"
@@ -53,7 +54,7 @@ oh and if your machines or account were created within an hour, have patience...
 	doloresWrongCmdMessage = "say what, that got no meaning for me\n try asking for `help`"
 )
 
-func harvestServerList() (appList string) {
+func harvestServerList() (appListText string) {
 	var buffer bytes.Buffer
 	set := make(map[string]struct{})
 	r, _ := regexp.Compile("SERVER_LIST_[A-Za-z0-9]+_([0-9A-Za-z_]+)")
@@ -67,10 +68,12 @@ func harvestServerList() (appList string) {
 	}
 	for key := range set {
 		buffer.WriteString(key)
-		buffer.WriteString("\n")
+		buffer.WriteString(" ")
 	}
 
-	appList = buffer.String()
+	appList := strings.Fields(buffer.String())
+	sort.Strings(appList)
+	appListText = strings.Join(appList, "\n")
 	return
 }
 
