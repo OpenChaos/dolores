@@ -23,7 +23,7 @@ fi
 
 [[ -z "${_SERVER_ENTRY}" ]] && _SERVER_ENTRY="There was no specific match. Here is list of all partial matchs, retry with more accurate match.
 
-"$(cat "${SERVER_LIST_PATH}" | grep "${SERVER_KEYWORD}" | awk '{print $2}' | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/, /gi')
+"$(cat "${SERVER_LIST_PATH}" | grep "${SERVER_KEYWORD}" | awk '{print $2}' | sort -d -b -f -i | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/, /gi')
 
 [[ -z "${_SERVER_ENTRY}" ]] && echo "[ERROR] either your provided name/ip isn't complete or it doen't exist in our records" && exit 1
 
