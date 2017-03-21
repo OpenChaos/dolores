@@ -31,4 +31,7 @@ var (
 
 	bootLogAllotCommand = allot.New("bootlog <boxName:string> <lineCount:string>")
 	bootLogNlpSamples   = []string{}
+
+	alphaAllotCommand = allot.New("alpha <alpha:string>")
+	alphaNlpSamples   = []string{}
 )

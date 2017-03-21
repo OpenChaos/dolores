@@ -25,6 +25,7 @@ var (
 		bootLogMessageHandler,
 		nslookupMessageHandler,
 		helpMessageHandler,
+		alphaMessageHandler,
 	}
 )
 

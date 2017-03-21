@@ -45,6 +45,11 @@ var (
 		allotCommand: bootLogAllotCommand,
 		nlpSamples:   bootLogNlpSamples,
 		msgFoo:       bootLog}
+
+	alphaMessageHandler = MessageHandler{name: "alpha",
+		allotCommand: alphaAllotCommand,
+		nlpSamples:   alphaNlpSamples,
+		msgFoo:       alpha}
 )
 
 func helpMessage(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
@@ -191,5 +196,20 @@ func bootLog(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, 
 		reply = fmt.Sprintf("[ERROR] bootlog failed for %s", serialOutFor)
 	}
 	reply = fmt.Sprintf("```\n%s\n```", reply)
+	return
+}
+
+func alpha(ev *slack.MessageEvent, match allot.MatchInterface) (reply string, err error) {
+	/* it's an alpha message handler
+	* currently just mimics usage of InteractiveMessage which doesn't work as need app
+	* will be used to test Golang's new plugin feature for drop-in message-handlers
+	* then will be used to handle set of alpha stage message handlers
+	 */
+	alphaMsg, _ := match.Match(0)
+	AddReaction(ev, "+1")
+	attachment := SampleAttachment()
+	attachments := []slack.Attachment{attachment}
+	ReplyInteractive(ev, alphaMsg, attachments)
+	reply = "we tried"
 	return
 }
