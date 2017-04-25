@@ -10,7 +10,7 @@ SERVER_LIST_PATH="$3"
 
 ######################################################## main
 
-unset _SERVER_ENTRY _GCLOUD_PROJECT _INSTANCE_NAME
+unset _SERVER_ENTRY _GCLOUD_PROJECT _INSTANCE_NAME _GCLOUD_ZONE
 
 if [[ $(echo "${SERVER_KEYWORD:0:1}" | grep -c '[0-9]') -ne 0 ]]; then
   ## keyword is IP Address
@@ -26,7 +26,8 @@ fi
 
 _GCLOUD_PROJECT=$(echo "${_SERVER_ENTRY}" | awk '{print $1}')
 _INSTANCE_NAME=$(echo "${_SERVER_ENTRY}" | awk '{print $2}')
+_GCLOUD_ZONE=$(echo "${_SERVER_ENTRY}" | awk '{print $3}')
 
 ########################################################
 
-gcloud --project "${_GCLOUD_PROJECT}" beta compute instances get-serial-port-output "${_INSTANCE_NAME}" | tail -${LINE_COUNT}
+gcloud --project "${_GCLOUD_PROJECT}" beta compute instances get-serial-port-output "${_INSTANCE_NAME}" --zone ${_GCLOUD_ZONE} | tail -${LINE_COUNT}
