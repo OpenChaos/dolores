@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+create_user(){
+  local USER_NAME="$1"
+
+  local ITS_GROUP=""
+  [[ $(cat /etc/group | awk -F':' '{if($1=="adm") print $1}' | wc -l) -eq 1 ]] && ITS_GROUP="${ITS_GROUP} adm"
+  [[ $(cat /etc/group | awk -F':' '{if($1=="wheel") print $1}' | wc -l) -eq 1 ]] && ITS_GROUP="${ITS_GROUP} wheel"
+  ITS_GROUP=$(echo ${ITS_GROUP} | xargs | sed 's/\s/,/')
+
+  echo "[info] creating user ${USER_NAME}"
+  useradd -m -d "/home/${USER_NAME}" -s /bin/bash -G ${ITS_GROUP} ${USER_NAME}
+}
+
+make_sudoer(){
+  local USER_NAME="$1"
+
+  [[ $(cat /etc/group | awk -F':' '{if($1=="adm") print $1}' | wc -l) -eq 1 ]] && usermod -a -G adm ${USER_NAME}
+  [[ $(cat /etc/group | awk -F':' '{if($1=="wheel") print $1}' | wc -l) -eq 1 ]] && usermod -a -G wheel ${USER_NAME}
+}
+
+add_pub_key_to_authorized(){
+  local USER_NAME="$1"
+  local USER_KEY="${@:2}"
+
+  [[ $(cat /etc/passwd | awk -F':' '{print $1}' | grep -c "^${USER_NAME}$") -ne 1 ]] && echo "[err] ${USER_NAME} don't exist so can't add keys" && return 1
+
+  local JUST_KEY=$(echo ${USER_KEY} | awk '{print $2}')
+  local USER_HOME=$(cat /etc/passwd | awk -F':' "{if(\$1==\"${USER_NAME}\") print \$6}")
+  local USER_SSHDIR="${USER_HOME}/.ssh"
+  local USER_AUTHKEYS="${USER_SSHDIR}/authorized_keys"
+
+  [[ ! -d ${USER_SSHDIR} ]] && mkdir -p ${USER_SSHDIR}
+  [[ ! -d ${USER_AUTHKEYS} ]] && touch ${USER_AUTHKEYS} && chmod 0644 "${USER_AUTHKEYS}" && chown ${USER_NAME}.${USER_NAME} "${USER_AUTHKEYS}"
+
+  if [[ $(cat "${USER_AUTHKEYS}" | grep -c "${JUST_KEY}") -ne 1 ]]; then
+    echo "${USER_KEY}" | sudo tee -a "${USER_AUTHKEYS}"
+  fi
+}
+
+prepare_user(){
+  local PARAM01="$@"
+  local USER_NAME=$(echo $PARAM01 | awk -F':' '{print $1}')
+  local USER_KEY=$(echo $PARAM01 | awk -F':' '{print $2}')
+
+  [[ $(cat /etc/passwd | awk -F':' '{print $1}' | grep -c "^${USER_NAME}$") -ne 1 ]] && create_user ${USER_NAME}
+
+  add_pub_key_to_authorized "${USER_NAME}" "${USER_KEY}"
+  make_sudoer ${USER_NAME}
+}
+
+
+IFS=$'\n'
+for entry in $(curl -sk "http://169.254.169.254/0.1/meta-data/attributes/sshKeys" | xargs -I{} echo "{}"); do
+  prepare_user "$entry"
+done
