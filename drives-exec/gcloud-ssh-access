@@ -1,0 +1,368 @@
+#!/bin/bash
+
+## set -ex ## grep failures need be handled first
+
+RUNNING_AT=$(pwd)
+cd $(dirname $0)
+MY_DIR=$(pwd)
+cd ${RUNNING_AT}
+
+MY_ENV="${MY_DIR}/gcloud-ssh-access.env"
+
+[[ -f "${MY_ENV}" ]] && source "${MY_ENV}"
+[[ -z "$GCLOUD_SSH_ACCESS_LOG_FILE" ]] && GCLOUD_SSH_ACCESS_LOG_FILE="${MY_DIR}/gcloud-ssh-access.log"
+
+unset SERVER_NAME_REGEX PUBLIC_KEYS SSH_USERNAME
+unset SSH_TO_MACHINES LOGIN_USERNAME
+
+DoneRegards(){
+  local DONE_MSG
+  DONE_MSG="$@"
+  echo "${DONE_MSG}" | tee -a $GCLOUD_SSH_ACCESS_LOG_FILE
+  exit 0
+}
+
+WhatTheFlaw(){
+  #exit 123
+  #echo "$1" | tee -a $GCLOUD_SSH_ACCESS_LOG_FILE
+  local ERROR_MSG
+  ERROR_MSG="$1"
+  echo "[ERROR] ${ERROR_MSG}"
+  echo "[ERROR] ${ERROR_MSG}" >> $GCLOUD_SSH_ACCESS_LOG_FILE
+  exit 123
+}
+
+LogDumper(){
+  unset LOG_MSG
+  LOG_MSG="$@"
+  echo "${LOG_MSG}" >> $GCLOUD_SSH_ACCESS_LOG_FILE
+}
+
+InfoLogDumper(){
+  unset LOG_MSG
+  LOG_MSG="$@"
+  LogDumper "[INFO] ${LOG_MSG}"
+}
+
+GcloudSshkeys() {
+  local host=$1
+  local zone=$2
+  [[ -z "${host}"  ]] && return
+  [[ -z "${zone}"  ]] && return
+
+  HOST_PUB_PATH="${SSH_USERNAME}-${host}.pub"
+  HOST_PUB_NEW_PATH="${SSH_USERNAME}-${host}-new.pub"
+
+# HOST_DESCRIPTION=$(gcloud --project ${GOOGLE_PROJECT} compute instances describe $host --zone=$zone)
+
+  IFS=',' read -ra pub_keys <<< "${PUBLIC_KEYS}"
+  keys_list=$(gcloud --project ${GOOGLE_PROJECT} compute instances describe $host --zone=$zone | grep ssh-rsa )
+
+  if [[ $(echo "$keys_list" | awk '{ print $1   }') == *"value"*  ]]; then
+    keys_list=$(gcloud --project ${GOOGLE_PROJECT} compute instances describe $host --zone=$zone | grep -A1 ssh-rsa | tr '\n' ' ' | awk '{ print $2" "$3" "$4  }')
+    echo "$keys_list" > ${HOST_PUB_PATH}
+
+  else
+    echo "$keys_list" | awk '{ print $1" "$2" "$3 }' > ${HOST_PUB_PATH}
+
+  fi
+
+  if [[ $(gcloud --project ${GOOGLE_PROJECT} compute instances describe $host --zone=$zone | grep -c "sshKeys") -ne 0 ]]; then
+    while IFS= read key
+    do
+      TEMP_LOGIN_USERNAME=$(echo $key | cut -d':' -f 1)
+      TEMP_PUBLIC_KEY=$(FixPublicKeys $key)
+      sed -i "/${TEMP_LOGIN_USERNAME}:ssh-rsa/c\\${TEMP_PUBLIC_KEY}" $HOST_PUB_PATH
+    done <"$HOST_PUB_PATH"
+  fi
+
+  touch "${HOST_PUB_NEW_PATH}"
+  for element in "${pub_keys[@]}"; do
+    [[ $(grep -c "$element" "${HOST_PUB_PATH}") -ne 0 ]] && \
+      InfoLogDumper "${SSH_USERNAME} keys already exists over ${host}" && \
+      continue
+    echo "$element" >> "${HOST_PUB_NEW_PATH}"
+  done
+
+  cat "${HOST_PUB_NEW_PATH}" >> "${HOST_PUB_PATH}"
+
+  if [[ $(cat "${HOST_PUB_NEW_PATH}" | wc -l) -eq 0 ]]; then
+    InfoLogDumper "No public keys to be added for ${host}. Skipping."
+  elif gcloud --project ${GOOGLE_PROJECT} compute instances add-metadata $host --metadata-from-file ssh-keys=${HOST_PUB_PATH} --zone=$zone; then
+    gcloud --project ${GOOGLE_PROJECT} compute instances remove-metadata $host --keys=sshKeys --zone=$zone;
+    InfoLogDumper "${SSH_USERNAME} keys have been added to $host."
+  else
+    InfoLogDumper "keys addition failed"
+  fi
+
+  rm ${HOST_PUB_NEW_PATH}
+  rm ${HOST_PUB_PATH}
+  #mv ${HOST_PUB_PATH}-new /tmp/old-hosts
+}
+
+RunGcloudSshKeysOnMachine(){
+  local host=$1
+  local zone=$2
+  [[ -z "${host}"  ]] && return
+  [[ -z "${zone}"  ]] && return
+
+  [[ -z "${GCLOUD_SSHKEYS_SCRIPT}" ]] && GCLOUD_SSHKEYS_SCRIPT="${MY_DIR}/gcloud-sshKeys"
+  local GCLOUD_SSHKEYS_SCRIPT_NAME=$(basename $GCLOUD_SSHKEYS_SCRIPT)
+
+  local networkIP=$(gcloud --project ${GOOGLE_PROJECT} compute instances describe $host --zone=$zone  | grep networkIP | awk -F':' '{print $2}' | xargs)
+
+  remote_output=$(ssh ${GCLOUD_COMMON_SSH_USER}@${networkIP} "hostname")
+  [[ $? -ne 0 ]] && InfoLogDumper "$host (${networkIP})'s ssh config seem to be missing." && return 1
+
+  remote_output=$(scp ${GCLOUD_SSHKEYS_SCRIPT} ${GCLOUD_COMMON_SSH_USER}@${networkIP}:/tmp/${GCLOUD_SSHKEYS_SCRIPT_NAME})
+  [[ $? -ne 0 ]] && InfoLogDumper "Failed to scp account creation script for ${GCLOUD_COMMON_SSH_USER} at ${host} (${networkIP})." && return 1
+
+  checking_psql_account=$(ssh ${GCLOUD_COMMON_SSH_USER}@${networkIP} "/usr/bin/env sudo bash /tmp/${GCLOUD_SSHKEYS_SCRIPT_NAME}")
+  [[ $? -ne 0 ]] && InfoLogDumper "Failed running account creation script for ${GCLOUD_COMMON_SSH_USER} at $host (${networkIP})." && return 1
+}
+
+GcloudSshkeysToHostForZone(){
+  host_for_zone="$@"
+  host=$(echo $host_for_zone | awk -F',' '{print $1}')
+  zone=$(echo $host_for_zone | awk -F',' '{print $2}')
+  GcloudSshkeys $host $zone
+  RunGcloudSshKeysOnMachine $host $zone
+  export SSH_TO_MACHINES="${SSH_TO_MACHINES} ${host}"
+  unset host zone
+}
+
+GcloudSshkeysToHostRegex(){
+  unset HOST_REGEX
+  HOST_REGEX="$1"
+
+  [[ -z "${GOOGLE_PROJECT}" ]] && WhatTheFlaw "GOOGLE_PROJECT is undefined."
+  [[ -z "${GOOGLE_PROJECT}" ]] && echo "GOOGLE_PROJECT is undefined." && exit 124
+
+  InfoLogDumper "gcloud --project ${GOOGLE_PROJECT} compute instances list"
+  hosts_for_zones=$(gcloud --project ${GOOGLE_PROJECT} compute instances list | grep "$HOST_REGEX" |  awk '{print $1","$2}')
+
+  [[ $(echo $hosts_for_zones | sed 's/\s//g') == "" ]] && \
+    WhatTheFlaw "No machines found for given pattern in linked Google project."
+  [[ $(echo $hosts_for_zones | sed 's/\s//g') == "" ]] && \
+    echo "No machines found for given pattern in linked Google project." && exit 124
+
+  for host_for_zone in $hosts_for_zones; do
+    InfoLogDumper "GcloudSshkeysToHostRegex for ${host_for_zone}"
+    GcloudSshkeysToHostForZone $host_for_zone
+  done
+}
+
+FixHostRegex(){
+  unset HOST_REGEX
+  HOST_REGEX="$1"
+
+  [[ -z "$HOST_REGEX" ]] && WhatTheFlaw "Empty Host Regex"
+  [[ -z "$HOST_REGEX" ]] && echo "Empty Host Regex" && exit 124
+
+  if [[ "${HOST_REGEX:0:0}" != "^" ]]; then
+    HOST_REGEX="^${HOST_REGEX}"
+  fi
+
+  [[ $( echo "${HOST_REGEX:1:1}" | grep -c '[A-Za-z0-9]' ) -ne 1 ]] && \
+    WhatTheFlaw "Host Regex begins with expression. ${HOST_REGEX}"
+  [[ $( echo "${HOST_REGEX:1:1}" | grep -c '[A-Za-z0-9]' ) -ne 1 ]] && \
+    echo "Host Regex begins with expression. ${HOST_REGEX}" && exit 124
+
+  [[ $( echo "${HOST_REGEX}" | grep -c '|' ) -ne 0 ]] && \
+    WhatTheFlaw "Host Regex shouldn't have '|' character'. ${HOST_REGEX}"
+  [[ $( echo "${HOST_REGEX}" | grep -c '|' ) -ne 0 ]] && \
+    echo "Host Regex shouldn't have '|' character'. ${HOST_REGEX}" && exit 124
+
+  echo $HOST_REGEX
+}
+
+GetPublicKeyFromSource(){
+  local PubKeyURI="$1"
+  local TMP_PUBLIC_KEYS=$(curl -skL $PubKeyURI | head -1 | sed 's/\s*(.*//')
+  [[ $(echo "${TMP_PUBLIC_KEYS}" | grep -c "You need to") -ne 0 ]] && \
+    unset TMP_PUBLIC_KEYS
+  [[ $(echo "${TMP_PUBLIC_KEYS}" | grep -c "Add public key") -ne 0 ]] && \
+    unset TMP_PUBLIC_KEYS
+
+  echo ${TMP_PUBLIC_KEYS}
+}
+
+GetPublicKeys(){
+  local TMP_PUBLIC_KEYS
+  local TMP_SSH_USERNAME="$@"
+  local PUBLIC_KEY_URIS=${SSH_ACCESS_PUBLIC_KEY_SOURCE}
+
+  for PUBLIC_KEY_URI in $PUBLIC_KEY_URIS; do
+    PUBLIC_KEY_URI_FOR_USER=$(echo "${PUBLIC_KEY_URI}" | sed "s/TMP_SSH_USERNAME/${TMP_SSH_USERNAME}/g")
+    TMP_PUBLIC_KEYS=$(GetPublicKeyFromSource ${PUBLIC_KEY_URI_FOR_USER})
+    [[ ! -z "${TMP_PUBLIC_KEYS}" ]] && break
+  done
+
+  ## removing leading and trailing spaces
+  TMP_PUBLIC_KEYS=$(echo "${TMP_PUBLIC_KEYS}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | head -1)
+
+  [[ -z "${TMP_PUBLIC_KEYS}" ]] && \
+    WhatTheFlaw "${TMP_SSH_USERNAME}'s Public Key were not found at '${PUBLIC_KEY_URIS}'."
+  [[ -z "${TMP_PUBLIC_KEYS}" ]] && \
+    echo "${TMP_SSH_USERNAME}'s Public Key were not found at '${PUBLIC_KEY_URIS}'." && exit 124
+
+  echo "$(FixPublicKeys $TMP_PUBLIC_KEYS)"
+}
+
+FixPublicKeys(){
+  local TMP_PUBLIC_KEYS="$@"
+  local TMP_PUBLIC_KEYS_TOKEN_COUNT=$(echo $TMP_PUBLIC_KEYS | awk  '{print NF}')
+
+  [[ -z "$TMP_PUBLIC_KEYS" ]] && WhatTheFlaw "Empty Public Key"
+  [[ -z "$TMP_PUBLIC_KEYS" ]] && echo "Empty Public Key" && exit 124
+
+  if [[ ${TMP_PUBLIC_KEYS_TOKEN_COUNT} -ge 3 ]]; then
+    if [[ $(echo $TMP_PUBLIC_KEYS | awk '{print $1}' | grep -c ':') -eq 1 ]]; then
+      LOGIN_USERNAME=$(echo $TMP_PUBLIC_KEYS | cut -d':' -f 1)
+      TMP_PUBLIC_KEY_PREFIX=$(echo $TMP_PUBLIC_KEYS | awk '{print $1" "$2}')
+      echo "${TMP_PUBLIC_KEY_PREFIX} ${LOGIN_USERNAME}@${GCLOUD_ORGANIZATION_USER}" && return
+    elif [[ "${TMP_PUBLIC_KEYS:0:4}" == "ssh-" ]]; then
+      TMP_PUBLIC_KEY_PREFIX=$(echo $TMP_PUBLIC_KEYS | awk '{print $1" "$2}')
+      echo "${LOGIN_USERNAME}:${TMP_PUBLIC_KEY_PREFIX} ${LOGIN_USERNAME}@${GCLOUD_ORGANIZATION_USER}" && return
+    fi
+    WhatTheFlaw "Public Keys seems suspicious. Make sure username *${SSH_USERNAME}* is as intended. ${TMP_PUBLIC_KEYS_TOKEN_COUNT} | ${TMP_PUBLIC_KEYS}"
+    echo "Public Keys seems suspicious. Make sure username *${SSH_USERNAME}* is as intended." && exit 124
+  fi
+
+  if [[ ${TMP_PUBLIC_KEYS_TOKEN_COUNT} -eq 2 ]]; then
+    if [[ $(echo $TMP_PUBLIC_KEYS | awk '{print $1}' | grep -c ':') -eq 1 ]]; then
+      LOGIN_USERNAME=$(echo $TMP_PUBLIC_KEYS | cut -d':' -f 1)
+      echo "${TMP_PUBLIC_KEYS} ${LOGIN_USERNAME}@${GCLOUD_ORGANIZATION_USER}" && return
+    elif [[ "${TMP_PUBLIC_KEYS:0:4}" == "ssh-" ]]; then
+      echo "${LOGIN_USERNAME}:${TMP_PUBLIC_KEYS} ${LOGIN_USERNAME}@${GCLOUD_ORGANIZATION_USER}" && return
+    else
+      echo "${LOGIN_USERNAME}:ssh-rsa ${TMP_PUBLIC_KEYS}" && return
+    fi
+  fi
+
+  if [[ ${TMP_PUBLIC_KEYS_TOKEN_COUNT} -eq 1 ]]; then
+    if [[ $(echo $TMP_PUBLIC_KEYS | awk '{print $1}' | grep -c ':') -eq 1 ]]; then
+      WhatTheFlaw "PUBLIC_KEYS must have Public-Key Token. ${TMP_PUBLIC_KEYS}"
+      echo "PUBLIC_KEYS must have Public-Key Token. ${TMP_PUBLIC_KEYS}" && exit 124
+    elif [[ "${TMP_PUBLIC_KEYS[1,4]}" == "ssh-" ]]; then
+      WhatTheFlaw "PUBLIC_KEYS must have Public-Key Token. ${TMP_PUBLIC_KEYS}"
+      echo "PUBLIC_KEYS must have Public-Key Token. ${TMP_PUBLIC_KEYS}" && exit 124
+    fi
+  fi
+
+  echo "${LOGIN_USERNAME}:ssh-rsa ${TMP_PUBLIC_KEYS} ${LOGIN_USERNAME}@${GCLOUD_ORGANIZATION_USER}" && return
+}
+
+FixSSHUsername(){
+  TMP_SSH_USERNAME="$1"
+  [[ -z "${TMP_SSH_USERNAME}" || "${TMP_SSH_USERNAME}" == "${GCLOUD_ORGANIZATION_USER}" ]] && \
+    WhatTheFlaw "SSH Username can't be empty or ${GCLOUD_ORGANIZATION_USER}"
+  [[ -z "${TMP_SSH_USERNAME}" || "${TMP_SSH_USERNAME}" == "${GCLOUD_ORGANIZATION_USER}" ]] && \
+    echo "SSH Username can't be empty or ${GCLOUD_ORGANIZATION_USER}" && exit 124
+
+  [[ $( echo "${TMP_SSH_USERNAME}" | grep -c '@' ) -ne 0 ]] && \
+    TMP_SSH_USERNAME=$(echo $TMP_SSH_USERNAME | sed 's/@.*//')
+  [[ $( echo "${TMP_SSH_USERNAME}" | grep -c 'mailto:' ) -ne 0 ]] && \
+    TMP_SSH_USERNAME=$(echo $TMP_SSH_USERNAME | sed 's/.*mailto://')
+
+  echo $TMP_SSH_USERNAME
+}
+
+FixGoogleProject(){
+  unset TMP_GOOGLE_PROJECT TMP_HOST_REGEX
+  TMP_HOST_REGEX="$@"
+
+  [[ "${TMP_HOST_REGEX:1:2}" == "p-" ]] && \
+    [[ "${PROD_OR_NOT}" != "yes" ]] && \
+    WhatTheFlaw "Prod machine access asked by unauthorized user."
+  [[ "${TMP_HOST_REGEX:1:2}" == "p-" ]] && \
+    [[ "${PROD_OR_NOT}" != "yes" ]] && \
+    echo "Prod machine access asked by unauthorized user." && exit 124
+
+  [[ "${TMP_HOST_REGEX:1:2}" == "i-" ]] && \
+    [[ ! -z "${GCLOUD_INTERNAL_ENVIRONMENT}" ]] && \
+    TMP_GOOGLE_PROJECT="${GCLOUD_INTERNAL_ENVIRONMENT}"
+
+  [[ "${TMP_HOST_REGEX:1:2}" == "g-" ]] && \
+    [[ ! -z "${GCLOUD_INTEGRATION_ENVIRONMENT}" ]] && \
+    TMP_GOOGLE_PROJECT="${GCLOUD_INTEGRATION_ENVIRONMENT}"
+
+  [[ "${TMP_HOST_REGEX:1:2}" == "d-" ]] && \
+    [[ ! -z "${GCLOUD_DEV_ENVIRONMENT}" ]] && \
+    TMP_GOOGLE_PROJECT="${GCLOUD_DEV_ENVIRONMENT}"
+
+  [[ "${TMP_HOST_REGEX:1:2}" == "s-" ]] && \
+    [[ ! -z "${GCLOUD_STAGING_ENVIRONMENT}" ]] && \
+    TMP_GOOGLE_PROJECT="${GCLOUD_STAGING_ENVIRONMENT}"
+
+  [[ "${TMP_HOST_REGEX:1:2}" == "u-" ]] && \
+    [[ ! -z "${GCLOUD_UAT_ENVIRONMENT}" ]] && \
+    TMP_GOOGLE_PROJECT="${GCLOUD_UAT_ENVIRONMENT}"
+
+  [[ "${TMP_HOST_REGEX:1:2}" == "l-" ]] && \
+    [[ ! -z "${GCLOUD_PERF_ENVIRONMENT}" ]] && \
+    TMP_GOOGLE_PROJECT="${GCLOUD_PERF_ENVIRONMENT}"
+
+  [[ "${TMP_HOST_REGEX:1:2}" == "p-" ]] && \
+    [[ ! -z "${GCLOUD_PROD_ENVIRONMENT}" ]] && \
+    TMP_GOOGLE_PROJECT="${GCLOUD_PROD_ENVIRONMENT}"
+
+  [[ -z "${TMP_GOOGLE_PROJECT}" ]] && \
+    [[ ! -z "${GCLOUD_DEFAULT_ENVIRONMENT}" ]] && \
+    TMP_GOOGLE_PROJECT="${GCLOUD_DEFAULT_ENVIRONMENT}"
+
+  [[ -z "${TMP_GOOGLE_PROJECT}" ]] && \
+    WhatTheFlaw "Google Project can't be passed empty"
+  [[ -z "${TMP_GOOGLE_PROJECT}" ]] && \
+    echo "Google Project can't be passed empty" && exit 124
+
+  InfoLogDumper $(cat $MY_ENV)
+  echo $TMP_GOOGLE_PROJECT
+}
+
+FixProdOrNot(){
+  TMP_PROD_OR_NOT="$@"
+  [[ -z "${TMP_PROD_OR_NOT}" ]] &&
+    TMP_PROD_OR_NOT="no"
+
+  for naam in $(echo $GCLOUD_SUPERADMINS); do
+    if [[ "${SSH_ACCESS_GRANTEE}" = "$naam"  ]]; then
+      TMP_PROD_OR_NOT="yes"
+      break
+    fi
+  done
+
+  echo $TMP_PROD_OR_NOT
+}
+
+CheckInputs(){
+  local THERE_IS_ERROR=""
+  [[ $(echo "${PROD_OR_NOT}" | grep -c '\[ERROR\]') -ne 0 ]] && echo "Some error with slack admin mode." && THERE_IS_ERROR="y"
+  [[ $(echo "${SERVER_NAME_REGEX}" | grep -c '\[ERROR\]') -ne 0 ]] && echo "Some error with regex for server list (${SERVER_NAME_REGEX})." && THERE_IS_ERROR="y"
+  [[ $(echo "${SSH_USERNAME}" | grep -c '\[ERROR\]') -ne 0 ]] && echo "Some error with provided userID (${SSH_USERNAME})." && THERE_IS_ERROR="y"
+  [[ $(echo "${LOGIN_USERNAME}" | grep -c '\[ERROR\]') -ne 0 ]] && echo "Some error with login-username preparation (${LOGIN_USERNAME})." && THERE_IS_ERROR="y"
+  [[ $(echo "${PUBLIC_KEYS}" | grep -c '\[ERROR\]') -ne 0 ]] && echo "Some error with available public keys ($PUBLIC_KEYS)." && THERE_IS_ERROR="y"
+  [[ $(echo "${GOOGLE_PROJECT}" | grep -c '\[ERROR\]') -ne 0 ]] && echo "Some error with google project picked (${GOOGLE_PROJECT})." && THERE_IS_ERROR="y"
+
+  [[ "${THERE_IS_ERROR}" == "y" ]] && WhatTheFlaw "[usage] $0 <host-regex> <username> <prod-or-not(yes|NO)>" && exit 125
+
+  [[ -z "${PUBLIC_KEYS}" ]] && \
+    WhatTheFlaw "${SSH_USERNAME}'s Public Key were not found at '${SSH_ACCESS_PUBLIC_KEY_SOURCE}'"
+}
+
+############################################### main()
+
+PROD_OR_NOT=$(FixProdOrNot "$3")
+SSH_USERNAME=$(FixSSHUsername "$2")
+SERVER_NAME_REGEX=$(FixHostRegex "$1")
+
+LOGIN_USERNAME=$(echo $SSH_USERNAME | sed 's/\.//' | sed 's/\-//g' | sed 's/\_//g')
+PUBLIC_KEYS=$(GetPublicKeys "${SSH_USERNAME}")
+GOOGLE_PROJECT=$(FixGoogleProject "${SERVER_NAME_REGEX}")
+
+CheckInputs
+
+InfoLogDumper "$GOOGLE_PROJECT ++ $SERVER_NAME_REGEX ++ $SSH_USERNAME ++ $PROD_OR_NOT ++ $PUBLIC_KEYS"
+GcloudSshkeysToHostRegex $SERVER_NAME_REGEX
+DoneRegards "done, ssh-access provided to username:*${LOGIN_USERNAME}* for machines: ${SSH_TO_MACHINES}"
+
