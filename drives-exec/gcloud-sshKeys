@@ -54,3 +54,6 @@ IFS=$'\n'
 for entry in $(curl -sk "http://169.254.169.254/0.1/meta-data/attributes/sshKeys" | xargs -I{} echo "{}"); do
   prepare_user "$entry"
 done
+for entry in $(curl -sk "http://169.254.169.254/0.1/meta-data/attributes/ssh-keys" | xargs -I{} echo "{}"); do
+  prepare_user "$entry"
+done
