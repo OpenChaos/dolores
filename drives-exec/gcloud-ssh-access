@@ -280,6 +280,10 @@ FixGoogleProject(){
     echo "Prod machine access asked by unauthorized user." && exit 124
 
   [[ "${TMP_HOST_REGEX:1:2}" == "i-" ]] && \
+    [[ "${PROD_OR_NOT}" != "yes" ]] && \
+    echo "Internal machine access asked by unauthorized user." && exit 124
+
+  [[ "${TMP_HOST_REGEX:1:2}" == "i-" ]] && \
     [[ ! -z "${GCLOUD_INTERNAL_ENVIRONMENT}" ]] && \
     TMP_GOOGLE_PROJECT="${GCLOUD_INTERNAL_ENVIRONMENT}"
 
