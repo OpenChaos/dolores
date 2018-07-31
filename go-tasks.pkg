@@ -1,0 +1,8 @@
+github.com/abhishekkr/gol/golconfig
+github.com/OpenChaos/dolores/corecode
+github.com/OpenChaos/dolores/drives
+github.com/OpenChaos/dolores/drives/gcp
+github.com/OpenChaos/dolores/vendor/github.com/abhishekkr/gol/golconfig
+github.com/dchest/stemmer/porter2
+github.com/nlopes/slack
+github.com/sbstjn/allot

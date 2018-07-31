@@ -1,0 +1,11 @@
+[[constraint]]
+  branch = "master"
+  name = "github.com/dchest/stemmer"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/sbstjn/allot"
+
+[prune]
+  go-tests = true
+  unused-packages = true
