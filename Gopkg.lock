@@ -2,43 +2,76 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:07c736f327dcdd11a9e52d008cb7bf71944e1cb8ddd18055b85de62881e71b76"
   name = "github.com/abhishekkr/gol"
   packages = ["golconfig"]
-  revision = "58755ef951fdf647c5a8ce0a3de70e3dce04079d"
+  pruneopts = "UT"
+  revision = "ff77ae32029db403c8c3e7d04decafab9c89647b"
 
 [[projects]]
   branch = "master"
+  digest = "1:1a3d6a3a73bdeecb1edd6f4c13dee3b071ab19ec984a83c45dac998bcf360f61"
   name = "github.com/dchest/stemmer"
   packages = [
     ".",
-    "porter2"
+    "porter2",
   ]
+  pruneopts = "UT"
   revision = "66719a20c4b5d119ff43ef41aab03265a3d644a7"
 
 [[projects]]
-  name = "github.com/jasonlvhit/gocron"
+  digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
+  name = "github.com/gorilla/websocket"
   packages = ["."]
-  revision = "42a5804d37aa0b9239b265e894a16b8edbf52d54"
-
-[[projects]]
-  name = "github.com/nlopes/slack"
-  packages = ["."]
-  revision = "e595e9d8590a04ff76407e4e7d1791d25b095c66"
+  pruneopts = "UT"
+  revision = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d"
+  version = "v1.4.0"
 
 [[projects]]
   branch = "master"
-  name = "github.com/sbstjn/allot"
+  digest = "1:73f8f3d39f0f3100420067b1ea4d98533ac96526faef38e3646ebf43aa4ff246"
+  name = "github.com/jasonlvhit/gocron"
   packages = ["."]
-  revision = "1f2349af5ccd74c1a8d8fe4d1bf688645b628321"
+  pruneopts = "UT"
+  revision = "54194c9749d48b073c9aeb2c787b6882e95dd0cd"
 
 [[projects]]
-  name = "golang.org/x/net"
-  packages = ["websocket"]
-  revision = "b1a2d6e8c8b5fc8f601ead62536f02a8e1b6217d"
+  digest = "1:95d38d218bf2290987c6b0e885a9f0f2d3d3239235acaddca01c3fe36e5e5566"
+  name = "github.com/nlopes/slack"
+  packages = [
+    ".",
+    "slackutilsx",
+  ]
+  pruneopts = "UT"
+  revision = "b9033a72a20bf84563485e86a2adbea4bf265804"
+  version = "v0.4.0"
+
+[[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:ad65c21cad052ae0b994f7124129b26e8125d2a06c2316ee9e97cb23ba75f527"
+  name = "github.com/sbstjn/allot"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1f2349af5ccd74c1a8d8fe4d1bf688645b628321"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7cafe2945584922c52f91bafbaf80021001cad9258b55a411cb0fc7c15cd3074"
+  input-imports = [
+    "github.com/abhishekkr/gol/golconfig",
+    "github.com/dchest/stemmer/porter2",
+    "github.com/jasonlvhit/gocron",
+    "github.com/nlopes/slack",
+    "github.com/sbstjn/allot",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
