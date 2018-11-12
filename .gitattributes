@@ -1,0 +1,7 @@
+* text=auto
+
+*.gitattributes text
+.gitignore text
+*.md text
+
+drives-exec/* linguist-vendored
